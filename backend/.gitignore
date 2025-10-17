@@ -1,0 +1,10 @@
+# Binaries
+/creditpyme
+
+# Firebase service account key
+/serviceAccountkey.json
+
+# Editor
+.vscode/
+*.swp
+*.tmp
