@@ -1,0 +1,33 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: member
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    depends_on:
+      - db
+    environment:
+      - DATABASE_DSN=host=db user=postgres password=member dbname=postgres port=5432 sslmode=disable
+      - GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/service-account-key.json
+    volumes:
+      - ./service-account-key.json:/run/secrets/service-account-key.json:ro
+    ports:
+      - "8080:8080"
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - "8081:8080"
+
+volumes:
+  db_data:
