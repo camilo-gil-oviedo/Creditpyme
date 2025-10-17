@@ -42,7 +42,7 @@ func main() {
 	} else {
 		credPath := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
 		if credPath == "" {
-			credPath = "./serviceAccountKeyGO.json"
+			credPath = "./serviceAccountKey.json"
 		}
 		opt := option.WithCredentialsFile(credPath)
 		app, err = firebase.NewApp(context.Background(), nil, opt)

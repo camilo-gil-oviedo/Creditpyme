@@ -2,7 +2,8 @@
 /creditpyme
 
 # Firebase service account key
-/serviceAccountkey.json
+/serviceAccountKey.json
+backend/serviceAccountKey.json
 
 # Editor
 .vscode/
