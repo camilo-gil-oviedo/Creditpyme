@@ -99,12 +99,18 @@ func (s *AuthService) Register(email, password string) (string, error) {
 
 	// Verificar si ya existe (optimista): la DB debe tener índice único para garantizar atomicidad
 	var existing User
-	if err := s.DB.Where("email = ?", email).First(&existing).Error; err == nil {
+	err := s.DB.Where("email = ?", email).First(&existing).Error
+	if err == nil {
+		// Usuario encontrado
 		return "", errors.New("usuario ya existe")
-	} else if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		// Error inesperado en la DB
 		log.Printf("AuthService.Register: error DB buscar email=%s err=%v", email, err)
 		return "", errors.New("error interno")
 	}
+
+	// Si llegamos aquí, err es ErrRecordNotFound → podemos registrar al usuario
 
 	uid := uuid.New().String()
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
