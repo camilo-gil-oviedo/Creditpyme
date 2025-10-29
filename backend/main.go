@@ -18,7 +18,7 @@ import (
 
 func main() {
 	// 1 Conexión a PostgreSQL
-	dsn := "host=localhost user=postgres password=Jjosee123& dbname=fintech port=5433 sslmode=disable"
+	dsn := "host=localhost user=postgres password='Jjosee123&' dbname=fintech port=5433 sslmode=disable"
 	dbConn, err := db.Connect(dsn)
 	if err != nil {
 		log.Fatal("No se pudo conectar a la base de datos:", err)
@@ -28,8 +28,9 @@ func main() {
 	dbConn.AutoMigrate(
 		&auth.User{},
 		&models.Cliente{},
-		//&models.Empresa{},
-		//&models.Solicitud{},
+		&models.Empresa{},
+		&models.SolicitudCredito{},
+		&models.Operador{},
 	)
 
 	// Auto-migrar el modelo User para crear la tabla y restricciones mínimas

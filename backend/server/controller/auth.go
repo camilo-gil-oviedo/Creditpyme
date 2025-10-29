@@ -38,20 +38,24 @@ func (c *AuthController) Register(ctx *gin.Context) {
 	var data struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
+		Rol      string `json:"rol"`
 	}
 
 	if err := ctx.ShouldBindJSON(&data); err != nil {
 		ctx.JSON(400, gin.H{"error": "body inválido"})
 		return
 	}
+	if data.Rol == "" {
+		data.Rol = "cliente"
+	}
 
-	token, err := c.AuthService.Register(data.Email, data.Password)
+	token, err := c.AuthService.RegisterWithRole(data.Email, data.Password, data.Rol)
 	if err != nil {
 		ctx.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
 
-	ctx.JSON(200, gin.H{"token": token})
+	ctx.JSON(200, gin.H{"token": token, "rol": data.Rol})
 }
 
 func (c *AuthController) Me(ctx *gin.Context) {

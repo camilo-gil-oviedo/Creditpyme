@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
+	"github.com/Camilo/creditPYMESbackend/auth"
 	"github.com/Camilo/creditPYMESbackend/db"
 	"github.com/Camilo/creditPYMESbackend/models"
 	"github.com/gin-gonic/gin"
@@ -23,40 +25,76 @@ func RegistrarClienteCompleto(c *gin.Context) {
 		return
 	}
 
-	// Establecer fecha de registro del cliente
 	payload.Cliente.FechaRegistro = time.Now()
 
-	// Conexión a la base de datos
-	database, err := db.Connect("host=localhost user=postgres password='Jjosee123&' dbname=fintech port=5432 sslmode=disable")
+	database, err := db.Connect("host=localhost user=postgres password='Jjosee123&' dbname=fintech port=5433 sslmode=disable")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo conectar a la base de datos", "detalle": err.Error()})
 		return
 	}
 
-	// Guardamos todo en una transacción para asegurar consistencia
 	err = database.Transaction(func(tx *gorm.DB) error {
-		// Guardar cliente
 		if res := tx.Create(&payload.Cliente); res.Error != nil {
 			return res.Error
 		}
 
-		// Asociar empresa al cliente y guardar
 		payload.Empresa.ClienteID = payload.Cliente.ID
 		if res := tx.Create(&payload.Empresa); res.Error != nil {
 			return res.Error
 		}
 
-		// Asociar solicitud al cliente y guardar
 		payload.Solicitud.ClienteID = payload.Cliente.ID
 		if res := tx.Create(&payload.Solicitud); res.Error != nil {
 			return res.Error
+		}
+
+		// 🔹 Buscar operadores activos
+		var operadores []auth.User
+		if err := tx.Where("rol = ? AND activo = ?", "operador", true).Find(&operadores).Error; err != nil || len(operadores) == 0 {
+			return fmt.Errorf("no hay operadores disponibles")
+		}
+
+		// 🔹 Calcular operador con menos asignaciones
+		type Conteo struct {
+			OperadorID string
+			Total      int64
+		}
+		var conteos []Conteo
+		tx.Model(&models.Asignacion{}).
+			Select("operador_id, COUNT(*) as total").
+			Group("operador_id").
+			Scan(&conteos)
+
+		operadorSeleccionado := operadores[0].ID
+		minAsignaciones := int64(999999)
+		for _, op := range operadores {
+			count := int64(0)
+			for _, c := range conteos {
+				if c.OperadorID == op.ID {
+					count = c.Total
+					break
+				}
+			}
+			if count < minAsignaciones {
+				minAsignaciones = count
+				operadorSeleccionado = op.ID
+			}
+		}
+
+		// 🔹 Crear asignación
+		asignacion := models.Asignacion{
+			OperadorID:  operadorSeleccionado,
+			SolicitudID: payload.Solicitud.ID,
+		}
+		if err := tx.Create(&asignacion).Error; err != nil {
+			return fmt.Errorf("error creando asignación: %v", err)
 		}
 
 		return nil
 	})
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo registrar toda la información", "detalle": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "no se pudo registrar", "detalle": err.Error()})
 		return
 	}
 
