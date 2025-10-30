@@ -25,18 +25,21 @@ func main() {
 	}
 
 	// Auto-migrar tus modelos
-	dbConn.AutoMigrate(
+	// Auto-migrar tus modelos
+	if err := dbConn.AutoMigrate(
 		&auth.User{},
 		&models.Cliente{},
 		&models.Empresa{},
 		&models.SolicitudCredito{},
 		&models.Operador{},
-	)
-
-	// Auto-migrar el modelo User para crear la tabla y restricciones mínimas
-	if err := dbConn.AutoMigrate(&auth.User{}); err != nil {
+	); err != nil {
 		log.Fatal("AutoMigrate falló:", err)
 	}
+
+	// Auto-migrar el modelo User para crear la tabla y restricciones mínimas
+	/*if err := dbConn.AutoMigrate(&auth.User{}); err != nil {
+		log.Fatal("AutoMigrate falló:", err)
+	}*/
 
 	// 2 Firebase: soportar emulador o producción con service account
 	var app *firebase.App

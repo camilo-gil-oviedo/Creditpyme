@@ -25,13 +25,25 @@ func (c *AuthController) Login(ctx *gin.Context) {
 		return
 	}
 
+	// Obtenemos el token y verificamos credenciales
 	token, err := c.AuthService.Login(data.Email, data.Password)
 	if err != nil {
 		ctx.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
 
-	ctx.JSON(200, gin.H{"token": token})
+	// 🔹 Obtenemos también el rol del usuario desde la base de datos
+	var user auth.User
+	if err := c.AuthService.DB.Where("email = ?", data.Email).First(&user).Error; err != nil {
+		ctx.JSON(400, gin.H{"error": "usuario no encontrado"})
+		return
+	}
+
+	// 🔹 Devolvemos token y rol
+	ctx.JSON(200, gin.H{
+		"token": token,
+		"rol":   user.Rol,
+	})
 }
 
 func (c *AuthController) Register(ctx *gin.Context) {
